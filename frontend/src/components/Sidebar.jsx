@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, useNavigate } from 'react-router-dom'
 import { Calendar, BarChart3, DollarSign, Scissors, Users, LayoutDashboard, User, LogOut } from 'lucide-react'
 import useAuthStore from '../store/authStore'
 
@@ -20,6 +20,8 @@ const comumLinks = [
 
 export default function Sidebar() {
   const user = useAuthStore((s) => s.user)
+  const logout = useAuthStore((s) => s.logout)
+  const navigate = useNavigate()
   const isDonoAdmin = user?.tipo === 'dono' || user?.tipo === 'admin'
   const links = [
     ...(isDonoAdmin ? adminLinks : []),
@@ -27,12 +29,17 @@ export default function Sidebar() {
     ...comumLinks,
   ]
 
+  const handleLogout = () => {
+    logout()
+    navigate('/login')
+  }
+
   return (
-    <aside className="w-64 bg-gray-900 text-white min-h-screen p-4">
+    <aside className="w-64 bg-gray-900 text-white min-h-screen p-4 flex flex-col">
       <div className="text-2xl font-bold mb-8 flex items-center gap-2">
         💈 Barbearia
       </div>
-      <nav className="space-y-1">
+      <nav className="space-y-1 flex-1">
         {links.map((link) => (
           <NavLink
             key={link.to}
@@ -48,8 +55,8 @@ export default function Sidebar() {
           </NavLink>
         ))}
       </nav>
-      <div className="absolute bottom-4 left-4">
-        <button className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
+      <div className="pt-4 border-t border-gray-700">
+        <button onClick={handleLogout} className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors w-full px-4 py-2">
           <LogOut size={20} />
           <span>Sair</span>
         </button>

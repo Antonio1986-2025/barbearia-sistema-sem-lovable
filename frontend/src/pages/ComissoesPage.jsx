@@ -102,7 +102,7 @@ export default function ComissoesPage() {
                 <tr className="border-b text-left">
                   <th className="pb-3 font-medium text-gray-500">Data</th>
                   <th className="pb-3 font-medium text-gray-500">Valor Serviço</th>
-                  <th className="pb-3 font-medium text-gray-500">Comissão (50%)</th>
+                  <th className="pb-3 font-medium text-gray-500">Comissão</th>
                   <th className="pb-3 font-medium text-gray-500">Status</th>
                 </tr>
               </thead>
@@ -111,7 +111,7 @@ export default function ComissoesPage() {
                   <tr key={c.id} className="border-b last:border-0">
                     <td className="py-3">{new Date(c.data_geracao).toLocaleDateString()}</td>
                     <td className="py-3">R$ {Number(c.valor_servico).toFixed(2)}</td>
-                    <td className="py-3 font-medium">R$ {Number(c.valor_comissao).toFixed(2)}</td>
+                    <td className="py-3 font-medium">{c.percentual_comissao}% — R$ {Number(c.valor_comissao).toFixed(2)}</td>
                     <td className="py-3">
                       <span className={`px-2 py-1 rounded text-xs ${c.status === 'paga' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
                         {c.status}

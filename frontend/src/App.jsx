@@ -8,6 +8,7 @@ import AgendaPage from './pages/AgendaPage'
 import ComissoesPage from './pages/ComissoesPage'
 import TelaCaixa from './pages/TelaCaixa'
 import RelatoriosPage from './pages/RelatoriosPage'
+import ClientesPage from './pages/ClientesPage'
 import useAuthStore from './store/authStore'
 
 function ProtectedRoute({ children }) {
@@ -30,7 +31,7 @@ export default function App() {
           <Route path="comissoes" element={<ComissoesPage />} />
           <Route path="caixa" element={<TelaCaixa />} />
           <Route path="relatorios" element={<RelatoriosPage />} />
-          <Route path="clientes" element={<div className="p-6"><h1 className="text-2xl font-bold">Clientes</h1><p className="text-gray-500 mt-2">Em desenvolvimento...</p></div>} />
+          <Route path="clientes" element={<ClientesPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

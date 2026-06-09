@@ -61,8 +61,10 @@ export const acertosAPI = {
 }
 
 export const usuariosAPI = {
+  listar: () => api.get('/usuarios'),
   criar: (data) => api.post('/usuarios', data),
   buscarTelefone: (telefone) => api.get(`/usuarios/telefone/${telefone}`),
+  buscar: (id) => api.get(`/usuarios/${id}`),
   criarDependente: (data) => api.post('/usuarios/dependentes', data),
 }
 
