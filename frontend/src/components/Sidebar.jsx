@@ -1,0 +1,43 @@
+import { NavLink } from 'react-router-dom'
+import { Calendar, BarChart3, DollarSign, Scissors, Users, LayoutDashboard, LogOut } from 'lucide-react'
+
+const links = [
+  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/agenda', icon: Calendar, label: 'Agenda' },
+  { to: '/comissoes', icon: DollarSign, label: 'Comissões' },
+  { to: '/caixa', icon: Scissors, label: 'Caixa' },
+  { to: '/relatorios', icon: BarChart3, label: 'Relatórios' },
+  { to: '/clientes', icon: Users, label: 'Clientes' },
+]
+
+export default function Sidebar() {
+  return (
+    <aside className="w-64 bg-gray-900 text-white min-h-screen p-4">
+      <div className="text-2xl font-bold mb-8 flex items-center gap-2">
+        💈 Barbearia
+      </div>
+      <nav className="space-y-1">
+        {links.map((link) => (
+          <NavLink
+            key={link.to}
+            to={link.to}
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                isActive ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800'
+              }`
+            }
+          >
+            <link.icon size={20} />
+            <span>{link.label}</span>
+          </NavLink>
+        ))}
+      </nav>
+      <div className="absolute bottom-4 left-4">
+        <button className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
+          <LogOut size={20} />
+          <span>Sair</span>
+        </button>
+      </div>
+    </aside>
+  )
+}
