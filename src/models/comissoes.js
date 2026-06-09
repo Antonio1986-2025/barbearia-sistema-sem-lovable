@@ -47,6 +47,8 @@ const comissoes = {
       [barbeiroId]
     );
     return {
+      total_atendimentos: parseInt(result.rows[0].total_atendimentos),
+      total_produzido: parseFloat(result.rows[0].total_produzido),
       comissao_total_pendente: parseFloat(result.rows[0].total_comissao),
       vales_abertos: parseFloat(vales.rows[0].total_vales),
       saldo_a_receber: parseFloat(result.rows[0].total_comissao) - parseFloat(vales.rows[0].total_vales),
