@@ -46,6 +46,12 @@ const agendamentos = {
     );
     if (noturno.rows.length > 0) horarios.rows.push(noturno.rows[0]);
 
+    const bloqueios = await db.query(
+      `SELECT hora_inicio, hora_fim FROM bloqueios_barbeiro
+       WHERE barbeiro_id = $1 AND data_inicio <= $2 AND data_fim >= $2`,
+      [barbeiroId, data]
+    );
+
     const agendados = await db.query(
       `SELECT hora_inicio, hora_fim FROM agendamentos WHERE barbeiro_id = $1 AND data = $2 AND status != 'cancelado'`,
       [barbeiroId, data]
@@ -60,7 +66,12 @@ const agendamentos = {
         const conflito = agendados.rows.some(a =>
           this.timeToMinutes(a.hora_inicio) < fimSlot && this.timeToMinutes(a.hora_fim) > inicio
         );
-        if (!conflito) {
+        const bloqueado = bloqueios.rows.some(b => {
+          const bi = b.hora_inicio ? this.timeToMinutes(b.hora_inicio) : 0;
+          const bf = b.hora_fim ? this.timeToMinutes(b.hora_fim) : 1440;
+          return inicio < bf && fimSlot > bi;
+        });
+        if (!conflito && !bloqueado) {
           slots.push({
             data_hora: `${data}T${this.minutesToTime(inicio)}:00`,
             hora: this.minutesToTime(inicio)
@@ -70,6 +81,26 @@ const agendamentos = {
       }
     }
     return slots;
+  },
+
+  async verificarDisponibilidade(barbeiroId, data, horaInicio, horaFim) {
+    const result = await db.query(
+      `SELECT id FROM agendamentos
+       WHERE barbeiro_id = $1 AND data = $2 AND status != 'cancelado'
+       AND hora_inicio < $4 AND hora_fim > $3`,
+      [barbeiroId, data, horaInicio, horaFim]
+    );
+    if (result.rows.length > 0) return false;
+
+    const bloq = await db.query(
+      `SELECT id FROM bloqueios_barbeiro
+       WHERE barbeiro_id = $1 AND data_inicio <= $2 AND data_fim >= $2
+       AND (hora_inicio IS NULL OR (hora_inicio < $4 AND hora_fim > $3))`,
+      [barbeiroId, data, horaInicio, horaFim]
+    );
+    if (bloq.rows.length > 0) return false;
+
+    return true;
   },
 
   async cancelar(id, motivo) {

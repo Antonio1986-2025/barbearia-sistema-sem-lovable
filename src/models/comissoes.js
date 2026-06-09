@@ -2,7 +2,9 @@ const db = require('../config/database');
 
 const comissoes = {
   async gerar(barbeiroId, agendamentoId, comandaId, valorServico) {
-    const percentual = 50;
+    const barbeiro = await db.query(`SELECT tipo_acesso FROM barbeiros WHERE id = $1`, [barbeiroId]);
+    const tipoAcesso = barbeiro.rows[0]?.tipo_acesso || 'barbeiro';
+    const percentual = tipoAcesso === 'dono' ? 100 : 50;
     const valorComissao = valorServico * (percentual / 100);
     const hoje = new Date();
     const diaSemana = hoje.getDay();
@@ -39,14 +41,31 @@ const comissoes = {
       `SELECT COALESCE(SUM(valor), 0) AS total_vales FROM vales WHERE barbeiro_id = $1 AND status = 'aberto'`,
       [barbeiroId]
     );
+    const historico = await db.query(
+      `SELECT id, valor_pago, status, data_pagamento, semana_inicio, semana_fim
+       FROM acertos_comissao WHERE barbeiro_id = $1 ORDER BY data_criacao DESC LIMIT 10`,
+      [barbeiroId]
+    );
     return {
       comissao_total_pendente: parseFloat(result.rows[0].total_comissao),
       vales_abertos: parseFloat(vales.rows[0].total_vales),
-      saldo_a_receber: parseFloat(result.rows[0].total_comissao) - parseFloat(vales.rows[0].total_vales)
+      saldo_a_receber: parseFloat(result.rows[0].total_comissao) - parseFloat(vales.rows[0].total_vales),
+      historico: historico.rows
     };
   },
 
   async registrarVale(barbeiroId, valor, observacoes = '') {
+    const barbeiro = await db.query(`SELECT limite_vale FROM barbeiros WHERE id = $1`, [barbeiroId]);
+    if (!barbeiro.rows[0]) throw new Error('Barbeiro não encontrado');
+    const limite = Number(barbeiro.rows[0].limite_vale);
+    const abertos = await db.query(
+      `SELECT COALESCE(SUM(valor), 0) AS total FROM vales WHERE barbeiro_id = $1 AND status = 'aberto'`,
+      [barbeiroId]
+    );
+    const totalUsado = Number(abertos.rows[0].total);
+    if (totalUsado + valor > limite) {
+      throw new Error(`Limite de vale excedido. Limite: R$ ${limite.toFixed(2)}, já utilizado: R$ ${totalUsado.toFixed(2)}`);
+    }
     const result = await db.query(
       `INSERT INTO vales (barbeiro_id, valor, observacoes) VALUES ($1, $2, $3) RETURNING *`,
       [barbeiroId, valor, observacoes]

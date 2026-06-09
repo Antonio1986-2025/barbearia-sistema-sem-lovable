@@ -2,6 +2,12 @@ const db = require('../config/database');
 
 const acertos = {
   async criar({ barbeiroId, semanaInicio, semanaFim }) {
+    const existente = await db.query(
+      `SELECT id FROM acertos_comissao WHERE barbeiro_id = $1 AND semana_inicio = $2 AND semana_fim = $3`,
+      [barbeiroId, semanaInicio, semanaFim]
+    );
+    if (existente.rows[0]) throw new Error('Acerto já existe para esta semana');
+
     const vales = await db.query(
       `SELECT COALESCE(SUM(valor), 0) AS total FROM vales WHERE barbeiro_id = $1 AND status = 'aberto'`,
       [barbeiroId]
@@ -16,6 +22,12 @@ const acertos = {
        VALUES ($1, $2, $3, $4, $5) RETURNING *`,
       [barbeiroId, semanaInicio, semanaFim, comissoes.rows[0].total, vales.rows[0].total]
     );
+
+    await db.query(
+      `UPDATE vales SET status = 'descontado', data_desconto = NOW() WHERE barbeiro_id = $1 AND status = 'aberto'`,
+      [barbeiroId]
+    );
+
     return result.rows[0];
   },
 

@@ -8,6 +8,13 @@ const comandas = {
     );
     return result.rows[0];
   },
+  async criarAvulsa(clienteNome) {
+    const result = await db.query(
+      `INSERT INTO comandas (cliente_nome, titular_nome) VALUES ($1, $1) RETURNING *`,
+      [clienteNome]
+    );
+    return result.rows[0];
+  },
   async buscarPorId(id) {
     const result = await db.query(
       `SELECT c.*, COALESCE(SUM(ic.valor * ic.quantidade), 0) AS total_calculado
@@ -24,8 +31,8 @@ const comandas = {
   async listarAbertas() {
     const result = await db.query(
       `SELECT c.*, b.nome AS barbeiro_nome FROM comandas c
-       JOIN agendamentos a ON a.id = c.agendamento_id
-       JOIN barbeiros b ON b.id = a.barbeiro_id
+       LEFT JOIN agendamentos a ON a.id = c.agendamento_id
+       LEFT JOIN barbeiros b ON b.id = a.barbeiro_id
        WHERE c.status = 'aberta' ORDER BY c.data_abertura`
     );
     return result.rows;

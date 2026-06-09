@@ -14,8 +14,8 @@ router.get('/barbeiro/:barbeiroId', async (req, res) => {
 router.get('/barbeiro/:barbeiroId/resumo', async (req, res) => {
   try {
     const { dataInicio, dataFim } = req.query;
-    const resumo = await comissoes.resumoSemana(req.params.barbeiroId, dataInicio, dataFim);
-    res.json({ resumo, historico: [] });
+    const result = await comissoes.resumoSemana(req.params.barbeiroId, dataInicio, dataFim);
+    res.json({ resumo: { ...result }, historico: result.historico });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

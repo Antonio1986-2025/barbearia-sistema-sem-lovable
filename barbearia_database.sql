@@ -98,7 +98,7 @@ CREATE TABLE agendamentos (
 -- 9. COMANDA
 CREATE TABLE comandas (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  agendamento_id UUID NOT NULL REFERENCES agendamentos(id),
+  agendamento_id UUID REFERENCES agendamentos(id),
   cliente_nome VARCHAR(255) NOT NULL,
   titular_nome VARCHAR(255),
   total DECIMAL(10,2) DEFAULT 0,
@@ -161,6 +161,7 @@ CREATE TABLE acertos_comissao (
   barbeiro_id UUID NOT NULL REFERENCES barbeiros(id),
   semana_inicio DATE NOT NULL,
   semana_fim DATE NOT NULL,
+  UNIQUE(barbeiro_id, semana_inicio, semana_fim),
   valor_total_comissao DECIMAL(10,2) NOT NULL,
   total_vales_descontados DECIMAL(10,2) DEFAULT 0,
   valor_pago DECIMAL(10,2) DEFAULT 0,

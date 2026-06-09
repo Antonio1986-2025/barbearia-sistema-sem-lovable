@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import Header from '../components/Header'
-import { comandasAPI, barbeirosAPI } from '../services/api'
-import { Search, Plus, DollarSign } from 'lucide-react'
+import { comandasAPI } from '../services/api'
+import { Search, Plus, DollarSign, UserPlus } from 'lucide-react'
 
 export default function TelaCaixa() {
   const [comandasAbertas, setComandasAbertas] = useState([])
@@ -10,24 +10,18 @@ export default function TelaCaixa() {
   const [termoBusca, setTermoBusca] = useState('')
   const [novoItem, setNovoItem] = useState({ tipo: 'produto', descricao: '', valor: '' })
   const [formaPagamento, setFormaPagamento] = useState('dinheiro')
+  const [mostrarNova, setMostrarNova] = useState(false)
+  const [novoCliente, setNovoCliente] = useState('')
 
-  useEffect(() => {
-    carregarComandas()
-  }, [])
+  useEffect(() => { carregarComandas() }, [])
 
   const carregarComandas = async () => {
-    try {
-      const r = await comandasAPI.listarAbertas()
-      setComandasAbertas(r.data)
-    } catch (err) {}
+    try { setComandasAbertas((await comandasAPI.listarAbertas()).data) } catch (e) {}
   }
 
   const selecionarComanda = async (comanda) => {
     setComandaSelecionada(comanda)
-    try {
-      const r = await comandasAPI.buscar(comanda.id)
-      setItens(r.data.itens || [])
-    } catch (err) {}
+    try { setItens((await comandasAPI.buscar(comanda.id)).data.itens || []) } catch (e) {}
   }
 
   const adicionarItem = async () => {
@@ -38,17 +32,29 @@ export default function TelaCaixa() {
       setItens(r.data.itens || [])
       setComandaSelecionada(r.data)
       setNovoItem({ tipo: 'produto', descricao: '', valor: '' })
-    } catch (err) { alert('Erro ao adicionar item') }
+    } catch (e) { alert('Erro ao adicionar item') }
   }
 
   const pagar = async () => {
     try {
-      await comandasAPI.pagar(comandaSelecionada.id, formaPagamento)
-      alert('Comanda paga com sucesso!')
+      const r = await comandasAPI.pagar(comandaSelecionada.id, null, formaPagamento)
+      alert(r.data?.mensagem || 'Comanda paga!')
       setComandaSelecionada(null)
       setItens([])
       carregarComandas()
-    } catch (err) { alert('Erro ao pagar') }
+    } catch (e) { alert('Erro ao pagar') }
+  }
+
+  const abrirNovaComanda = async () => {
+    if (!novoCliente.trim()) return
+    try {
+      const r = await comandasAPI.criarAvulsa({ clienteNome: novoCliente.trim() })
+      alert(r.data?.mensagem || 'Comanda criada!')
+      setMostrarNova(false)
+      setNovoCliente('')
+      carregarComandas()
+      selecionarComanda(r.data.comanda)
+    } catch (e) { alert('Erro ao criar comanda') }
   }
 
   const comandasFiltradas = comandasAbertas.filter(c =>
@@ -64,13 +70,29 @@ export default function TelaCaixa() {
       <div className="p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-1">
           <div className="bg-white rounded-xl p-6 shadow-sm border">
-            <h2 className="text-lg font-semibold mb-4">Comandas Abertas</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">Comandas Abertas</h2>
+              <button onClick={() => setMostrarNova(true)} className="bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700" title="Nova Comanda">
+                <UserPlus size={18} />
+              </button>
+            </div>
             <div className="relative mb-4">
               <Search size={18} className="absolute left-3 top-3 text-gray-400" />
               <input type="text" placeholder="Buscar cliente..." value={termoBusca}
                 onChange={(e) => setTermoBusca(e.target.value)} className="w-full pl-10 pr-4 py-2 border rounded-lg" />
             </div>
-            <div className="space-y-2 max-h-96 overflow-y-auto">
+            {mostrarNova && (
+              <div className="mb-4 p-3 border rounded-lg bg-blue-50">
+                <input type="text" placeholder="Nome do cliente" value={novoCliente}
+                  onChange={(e) => setNovoCliente(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg mb-2" autoFocus />
+                <div className="flex gap-2">
+                  <button onClick={abrirNovaComanda} className="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-blue-700">Criar</button>
+                  <button onClick={() => { setMostrarNova(false); setNovoCliente('') }} className="bg-gray-300 px-3 py-1.5 rounded-lg text-sm hover:bg-gray-400">Cancelar</button>
+                </div>
+              </div>
+            )}
+            <div className="space-y-2 max-h-80 overflow-y-auto">
               {comandasFiltradas.map((c) => (
                 <button key={c.id} onClick={() => selecionarComanda(c)}
                   className={`w-full text-left p-3 rounded-lg border transition-colors ${comandaSelecionada?.id === c.id ? 'bg-blue-50 border-blue-300' : 'hover:bg-gray-50'}`}>

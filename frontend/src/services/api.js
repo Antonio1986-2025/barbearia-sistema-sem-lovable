@@ -40,6 +40,7 @@ export const comandasAPI = {
   buscarPorCliente: (nome, data) => api.get(`/comandas/buscar/${nome}`, { params: { data } }),
   adicionarItem: (id, data) => api.post(`/comandas/${id}/itens`, data),
   pagar: (id, valorPago, formaPagamento) => api.post(`/comandas/${id}/pagar`, { valorPago, formaPagamento }),
+  criarAvulsa: (data) => api.post('/comandas/avulsa', data),
 }
 
 export const comissoesAPI = {

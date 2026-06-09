@@ -7,6 +7,8 @@ export default function AgendaPage() {
   const [barbeiros, setBarbeiros] = useState([])
   const [barbeiroId, setBarbeiroId] = useState('')
   const [agendamentos, setAgendamentos] = useState([])
+  const [horarios, setHorarios] = useState([])
+  const [noturnoAtivo, setNoturnoAtivo] = useState(false)
   const [data, setData] = useState(() => {
     const hoje = new Date()
     return `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`
@@ -20,19 +22,16 @@ export default function AgendaPage() {
   }, [])
 
   useEffect(() => {
-    if (barbeiroId && data) {
-      agendamentosAPI.listarPorBarbeiro(barbeiroId, data)
-        .then(r => {
-          const items = Array.isArray(r.data) ? r.data : []
-          console.log('Agendamentos:', items)
-          items.forEach(a => console.log(`  hora_inicio: "${a.hora_inicio}" -> substring: "${String(a.hora_inicio).substring(0,5)}"`))
-          setAgendamentos(items)
-        })
-        .catch(err => {
-          console.error('Erro ao buscar agendamentos:', err)
-          setAgendamentos([])
-        })
-    }
+    if (!barbeiroId) return
+    const diaSemana = new Date(data + 'T12:00:00').getDay()
+    barbeirosAPI.horarios(barbeiroId).then(r => {
+      const hojeHorarios = (r.data || []).filter(h => h.dia_semana === diaSemana && h.ativo)
+      setHorarios(hojeHorarios)
+    }).catch(() => setHorarios([]))
+    barbeirosAPI.listar(barbeiroId).then(() => {}).catch(() => {})
+    agendamentosAPI.listarPorBarbeiro(barbeiroId, data)
+      .then(r => setAgendamentos(Array.isArray(r.data) ? r.data : []))
+      .catch(() => setAgendamentos([]))
   }, [barbeiroId, data])
 
   const mudarDia = (dias) => {
@@ -41,10 +40,27 @@ export default function AgendaPage() {
     setData(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`)
   }
 
-  const horarios = []
-  for (let h = 7; h <= 21; h++) {
-    horarios.push(`${String(h).padStart(2, '0')}:00`)
-    if (h < 21) horarios.push(`${String(h).padStart(2, '0')}:30`)
+  const gerarSlots = () => {
+    const slots = []
+    for (const h of horarios) {
+      const [hI, mI] = h.hora_inicio.split(':').map(Number)
+      const [hF, mF] = h.hora_fim.split(':').map(Number)
+      let ini = hI * 60 + mI
+      const fim = hF * 60 + mF
+      while (ini < fim) {
+        const hh = String(Math.floor(ini / 60)).padStart(2, '0')
+        const mm = String(ini % 60).padStart(2, '0')
+        slots.push(`${hh}:${mm}`)
+        ini += 30
+      }
+    }
+    if (noturnoAtivo) {
+      for (let h = 19; h < 21; h++) {
+        slots.push(`${String(h).padStart(2, '0')}:00`)
+        slots.push(`${String(h).padStart(2, '0')}:30`)
+      }
+    }
+    return [...new Set(slots)].sort()
   }
 
   const formatTime = (t) => {
@@ -52,6 +68,8 @@ export default function AgendaPage() {
     const s = String(t)
     return s.length >= 5 ? s.substring(0, 5) : s
   }
+
+  const slots = gerarSlots()
 
   return (
     <div>
@@ -72,7 +90,10 @@ export default function AgendaPage() {
 
         <div className="bg-white rounded-xl shadow-sm border">
           <div className="divide-y">
-            {horarios.map((hora) => {
+            {slots.length === 0 && (
+              <div className="p-6 text-center text-gray-400">Nenhum horário configurado para este dia</div>
+            )}
+            {slots.map((hora) => {
               const ag = agendamentos.find(a => formatTime(a.hora_inicio) === hora)
               return (
                 <div key={hora} className="flex items-center hover:bg-gray-50">
