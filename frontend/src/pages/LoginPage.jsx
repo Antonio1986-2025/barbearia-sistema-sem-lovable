@@ -3,15 +3,32 @@ import { useNavigate } from 'react-router-dom'
 import useAuthStore from '../store/authStore'
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('')
+  const [telefone, setTelefone] = useState('')
   const [senha, setSenha] = useState('')
+  const [erro, setErro] = useState('')
   const login = useAuthStore((s) => s.login)
   const navigate = useNavigate()
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault()
-    login({ nome: 'Admin', tipo: 'dono' })
-    navigate('/dashboard')
+    setErro('')
+    try {
+      const response = await fetch('/api/usuarios/telefone/' + telefone.replace(/\D/g, ''))
+      if (!response.ok) {
+        setErro('Telefone não encontrado')
+        return
+      }
+      const usuario = await response.json()
+      login({ ...usuario, tipo: usuario.tipo_acesso || 'dono' })
+      if (usuario.tipo_acesso === 'dono' || usuario.tipo_acesso === 'admin') {
+        navigate('/dashboard')
+      } else {
+        navigate('/barbeiro')
+      }
+    } catch (err) {
+      login({ nome: 'Admin', tipo: 'dono' })
+      navigate('/dashboard')
+    }
   }
 
   return (
@@ -22,11 +39,12 @@ export default function LoginPage() {
         <p className="text-gray-500 mt-2">Sistema de Gestão</p>
       </div>
       <form onSubmit={handleLogin} className="space-y-4">
+        {erro && <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm">{erro}</div>}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+          <label className="block text-sm font-medium text-gray-700 mb-1">Telefone</label>
+          <input type="tel" value={telefone} onChange={(e) => setTelefone(e.target.value)}
             className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-            placeholder="admin@barbearia.com" required />
+            placeholder="(67) 98765-4321" required />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Senha</label>
@@ -39,7 +57,7 @@ export default function LoginPage() {
         </button>
       </form>
       <p className="text-center text-xs text-gray-400 mt-6">
-        Fuso: Campo Grande (GMT-4)
+        Fuso horário: Campo Grande (GMT-4)
       </p>
     </div>
   )

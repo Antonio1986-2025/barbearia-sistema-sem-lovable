@@ -28,6 +28,7 @@ const comissoesRouter = require('./routes/comissoes');
 const servicosRouter = require('./routes/servicos');
 const usuariosRouter = require('./routes/usuarios');
 const relatoriosRouter = require('./routes/relatorios');
+const acertosRouter = require('./routes/acertos');
 
 app.use('/api/agendamentos', agendamentosRouter);
 app.use('/api/barbeiros', barbeirosRouter);
@@ -36,6 +37,7 @@ app.use('/api/comissoes', comissoesRouter);
 app.use('/api/servicos', servicosRouter);
 app.use('/api/usuarios', usuariosRouter);
 app.use('/api/relatorios', relatoriosRouter);
+app.use('/api/acertos', acertosRouter);
 
 io.on('connection', (socket) => {
   console.log('Cliente conectado:', socket.id);

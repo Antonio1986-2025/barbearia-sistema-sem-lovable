@@ -1,56 +1,20 @@
-import pg from 'pg';
-import dotenv from 'dotenv';
-
-dotenv.config();
-
-const { Pool } = pg;
+const { Pool } = require('pg');
+require('dotenv').config();
 
 const pool = new Pool({
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT,
-  database: process.env.DB_NAME,
-  ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
+  connectionString: process.env.DATABASE_URL,
 });
 
-// Testar conexão
 pool.on('connect', () => {
-  console.log('✅ Conectado ao PostgreSQL com sucesso!');
+  console.log('Conectado ao PostgreSQL');
 });
 
 pool.on('error', (err) => {
-  console.error('❌ Erro inesperado no pool:', err);
+  console.error('Erro no PostgreSQL:', err);
+  process.exit(-1);
 });
 
-// Função para fazer queries
-export async function query(text, params) {
-  const start = Date.now();
-  try {
-    const result = await pool.query(text, params);
-    const duration = Date.now() - start;
-    console.log(`⚡ Query executada em ${duration}ms`);
-    return result;
-  } catch (error) {
-    console.error('❌ Erro na query:', error);
-    throw error;
-  }
-}
-
-// Função para fazer transações
-export async function transaction(callback) {
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
-    const result = await callback(client);
-    await client.query('COMMIT');
-    return result;
-  } catch (error) {
-    await client.query('ROLLBACK');
-    throw error;
-  } finally {
-    client.release();
-  }
-}
-
-export default pool;
+module.exports = {
+  query: (text, params) => pool.query(text, params),
+  pool,
+};

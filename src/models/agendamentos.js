@@ -1,17 +1,20 @@
 const db = require('../config/database');
 
 const agendamentos = {
-  async criar({ usuarioTitularId, dependenteId, barbeiroId, servicoId, data, horaInicio, horaFim }) {
+  async criar({ usuarioTitularId, dependenteId, barbeiroId, servicoId, data, horaInicio, horaFim, duracaoMinutos, precoServico, observacoes }) {
     const result = await db.query(
-      `INSERT INTO agendamentos (usuario_titular_id, dependente_id, barbeiro_id, servico_id, data, hora_inicio, hora_fim)
-       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-      [usuarioTitularId, dependenteId, barbeiroId, servicoId, data, horaInicio, horaFim]
+      `INSERT INTO agendamentos (usuario_titular_id, dependente_id, barbeiro_id, servico_id, data, hora_inicio, hora_fim, duracao_minutos, preco_servico, observacoes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+      [usuarioTitularId, dependenteId, barbeiroId, servicoId, data, horaInicio, horaFim, duracaoMinutos, precoServico, observacoes]
     );
     return result.rows[0];
   },
+
   async listarPorBarbeiro(barbeiroId, data) {
-    let query = `SELECT a.*, s.nome AS servico_nome, s.preco, u.nome AS titular_nome, d.nome AS dependente_nome
-                 FROM agendamentos a JOIN servicos s ON s.id = a.servico_id
+    let query = `SELECT a.*, s.nome AS servico_nome, s.preco AS preco_padrao,
+                        u.nome AS titular_nome, d.nome AS dependente_nome
+                 FROM agendamentos a
+                 JOIN servicos s ON s.id = a.servico_id
                  LEFT JOIN usuarios u ON u.id = a.usuario_titular_id
                  LEFT JOIN dependentes d ON d.id = a.dependente_id
                  WHERE a.barbeiro_id = $1`;
@@ -25,7 +28,8 @@ const agendamentos = {
     const result = await db.query(query, params);
     return result.rows;
   },
-  async buscarHorariosDisponiveis(barbeiroId, data, servicoId) {
+
+  async buscarHorariosDisponiveis(barbeiroId, servicoId, data) {
     const servico = await db.query(`SELECT duracao_minutos FROM servicos WHERE id = $1`, [servicoId]);
     if (!servico.rows[0]) return [];
     const duracao = servico.rows[0].duracao_minutos;
@@ -37,7 +41,7 @@ const agendamentos = {
     if (horarios.rows.length === 0) return [];
 
     const noturno = await db.query(
-      `SELECT hora_inicio, hora_fim FROM barbeiro_noturno WHERE barbeiro_id = $1 AND data = $2 AND ativo = true`,
+      `SELECT hora_inicio, hora_fim FROM noturno_ativado WHERE barbeiro_id = $1 AND data = $2 AND ativo = true`,
       [barbeiroId, data]
     );
     if (noturno.rows.length > 0) horarios.rows.push(noturno.rows[0]);
@@ -57,31 +61,46 @@ const agendamentos = {
           this.timeToMinutes(a.hora_inicio) < fimSlot && this.timeToMinutes(a.hora_fim) > inicio
         );
         if (!conflito) {
-          slots.push({ horaInicio: this.minutesToTime(inicio), horaFim: this.minutesToTime(fimSlot) });
+          slots.push({
+            data_hora: `${data}T${this.minutesToTime(inicio)}:00`,
+            hora: this.minutesToTime(inicio)
+          });
         }
         inicio += 30;
       }
     }
     return slots;
   },
-  async cancelar(id) {
+
+  async cancelar(id, motivo) {
     const result = await db.query(
-      `UPDATE agendamentos SET status = 'cancelado' WHERE id = $1 AND status = 'agendado' RETURNING *`,
-      [id]
+      `UPDATE agendamentos SET status = 'cancelado', motivo_cancelamento = $2 WHERE id = $1 AND status = 'agendado' RETURNING *`,
+      [id, motivo || null]
     );
     return result.rows[0];
   },
+
   async concluir(id) {
     const result = await db.query(
-      `UPDATE agendamentos SET status = 'concluido' WHERE id = $1 AND status = 'agendado' RETURNING *`,
+      `UPDATE agendamentos SET status = 'concluido' WHERE id = $1 AND status IN ('agendado', 'em_atendimento') RETURNING *`,
       [id]
     );
     return result.rows[0];
   },
+
+  async iniciarAtendimento(id) {
+    const result = await db.query(
+      `UPDATE agendamentos SET status = 'em_atendimento' WHERE id = $1 AND status = 'agendado' RETURNING *`,
+      [id]
+    );
+    return result.rows[0];
+  },
+
   timeToMinutes(time) {
     const [h, m] = time.split(':').map(Number);
     return h * 60 + m;
   },
+
   minutesToTime(min) {
     const h = Math.floor(min / 60);
     const m = min % 60;
