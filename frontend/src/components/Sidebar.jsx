@@ -1,8 +1,16 @@
 import { NavLink } from 'react-router-dom'
-import { Calendar, BarChart3, DollarSign, Scissors, Users, LayoutDashboard, LogOut } from 'lucide-react'
+import { Calendar, BarChart3, DollarSign, Scissors, Users, LayoutDashboard, User, LogOut } from 'lucide-react'
+import useAuthStore from '../store/authStore'
 
-const links = [
-  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+const adminLinks = [
+  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard Admin' },
+]
+
+const barbeiroLinks = [
+  { to: '/barbeiro', icon: User, label: 'Meu Dashboard' },
+]
+
+const comumLinks = [
   { to: '/agenda', icon: Calendar, label: 'Agenda' },
   { to: '/comissoes', icon: DollarSign, label: 'Comissões' },
   { to: '/caixa', icon: Scissors, label: 'Caixa' },
@@ -11,6 +19,14 @@ const links = [
 ]
 
 export default function Sidebar() {
+  const user = useAuthStore((s) => s.user)
+  const isDonoAdmin = user?.tipo === 'dono' || user?.tipo === 'admin'
+  const links = [
+    ...(isDonoAdmin ? adminLinks : []),
+    ...barbeiroLinks,
+    ...comumLinks,
+  ]
+
   return (
     <aside className="w-64 bg-gray-900 text-white min-h-screen p-4">
       <div className="text-2xl font-bold mb-8 flex items-center gap-2">

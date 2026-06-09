@@ -20,11 +20,7 @@ export default function LoginPage() {
       }
       const usuario = await response.json()
       login({ ...usuario, tipo: usuario.tipo_acesso || 'dono' })
-      if (usuario.tipo_acesso === 'dono' || usuario.tipo_acesso === 'admin') {
-        navigate('/dashboard')
-      } else {
-        navigate('/barbeiro')
-      }
+      navigate('/barbeiro')
     } catch (err) {
       login({ nome: 'Admin', tipo: 'dono' })
       navigate('/dashboard')

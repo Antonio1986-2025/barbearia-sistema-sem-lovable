@@ -15,10 +15,25 @@ router.post('/', async (req, res) => {
 
 router.get('/telefone/:telefone', async (req, res) => {
   try {
-    const usuario = await usuarios.buscarPorTelefone(req.params.telefone);
-    if (!usuario) return res.status(404).json({ error: 'Usuario nao encontrado' });
-    const dependentes = await usuarios.listarDependentes(usuario.id);
-    res.json({ ...usuario, dependentes });
+    const telefone = req.params.telefone;
+    const barbeiros = require('../models/barbeiros');
+    const db = require('../config/database');
+
+    let usuario = await usuarios.buscarPorTelefone(telefone);
+    if (usuario) {
+      const dependentes = await usuarios.listarDependentes(usuario.id);
+      return res.json({ ...usuario, tipo_acesso: 'cliente', dependentes });
+    }
+
+    const result = await db.query(
+      `SELECT * FROM barbeiros WHERE telefone = $1 AND ativo = true`, [telefone]
+    );
+    if (result.rows[0]) {
+      const barbeiro = result.rows[0];
+      return res.json({ ...barbeiro, tipo_acesso: barbeiro.tipo_acesso || 'barbeiro' });
+    }
+
+    return res.status(404).json({ error: 'Telefone não encontrado' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

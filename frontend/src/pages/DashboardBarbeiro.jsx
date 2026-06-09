@@ -3,9 +3,11 @@ import Header from '../components/Header'
 import { comissoesAPI, agendamentosAPI } from '../services/api'
 import { connectBarbeiro, disconnect, onNovoAgendamento, onComissaoAtualizada, removeListeners } from '../services/socket'
 import { DollarSign, Clock, TrendingUp, History } from 'lucide-react'
+import useAuthStore from '../store/authStore'
 
 export default function DashboardBarbeiro() {
-  const barbeiroId = 'ID_DO_BARBEIRO_AQUI'
+  const user = useAuthStore((s) => s.user)
+  const barbeiroId = user?.id
   const [comissoes, setComissoes] = useState([])
   const [agendamentos, setAgendamentos] = useState([])
   const [resumo, setResumo] = useState({ total_produzido: 0, total_comissao: 0, total_vales: 0, total_atendimentos: 0 })
