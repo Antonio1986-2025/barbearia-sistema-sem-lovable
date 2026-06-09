@@ -19,7 +19,7 @@ export default function DashboardBarbeiro() {
     const fmt = (d) => d.toISOString().split('T')[0]
 
     comissoesAPI.listar(barbeiroId).then(r => setComissoes(r.data)).catch(() => {})
-    comissoesAPI.resumo(barbeiroId, { dataInicio: fmt(segunda), dataFim: fmt(domingo) }).then(r => setResumo(r.data)).catch(() => {})
+    comissoesAPI.resumo(barbeiroId, { dataInicio: fmt(segunda), dataFim: fmt(domingo) }).then(r => setResumo(r.data.resumo || r.data)).catch(() => {})
     agendamentosAPI.listarPorBarbeiro(barbeiroId).then(r => setAgendamentos(r.data)).catch(() => {})
 
     connectBarbeiro(barbeiroId)
